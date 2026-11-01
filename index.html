@@ -63,7 +63,7 @@ h1,h2,h3,p{margin:0}
 .p-busy i{background:var(--accent);animation:pulse 1s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.25}}
 .iconbtn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--glass);border:1px solid var(--line)}
-.dangerbtn{min-height:40px;padding:0 14px;border-radius:99px;background:rgba(232,185,123,.16);border:1px solid var(--warn);color:var(--warn);font-size:13px;font-weight:500}
+.dangerbtn{min-height:40px;padding:0 14px;border-radius:99px;background:color-mix(in srgb,var(--warn) 16%,transparent);border:1px solid var(--warn);color:var(--warn);font-size:13px;font-weight:500}
 
 /* month nav */
 .monthnav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
@@ -163,6 +163,13 @@ h1,h2,h3,p{margin:0}
 .card .row{display:flex;gap:10px;flex-wrap:wrap}
 .card .row .btn{min-width:0}
 
+.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.themeopt{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);text-align:center;min-width:0}
+.themeopt .sw{display:grid;place-items:center;width:100%;height:62px;border-radius:16px;border:1px solid var(--line)}
+.themeopt .sw .i{width:26px;height:26px}
+.themeopt[aria-pressed=true]{color:var(--fg)}
+.themeopt[aria-pressed=true] .sw{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+
 /* dock + toast */
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:5;pointer-events:none;
   padding:10px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
@@ -179,12 +186,15 @@ h1,h2,h3,p{margin:0}
 .leaves{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
 .leaves svg{width:100%;height:100%;filter:blur(2.5px)}
 .splash{display:flex;align-items:center;justify-content:center;min-height:82vh}
-.splashcard{width:100%;max-width:360px;padding:38px 26px 28px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;background:rgba(206,228,196,.06)}
+.splashcard{width:100%;max-width:360px;padding:38px 26px 28px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px}
 .splashcard .logo{width:46px;height:46px;stroke:var(--accent);stroke-width:1.3}
 .splashcard h1{font-family:var(--display);font-weight:400;font-size:54px;line-height:1;letter-spacing:.01em}
 .splashcard .tagline{color:var(--accent);font-size:15.5px}
 .splashcard .lines{color:var(--fg);line-height:1.6;margin:4px 0 14px}
 .splashcard .fine{margin-top:2px}
+.namefield{display:flex;flex-direction:column;gap:6px;width:100%;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.namefield input{min-height:46px;border-radius:99px;background:var(--glass);border:1px solid var(--line);padding:0 16px;text-align:center;text-transform:none;letter-spacing:0;font-size:16px;color:var(--fg);outline:0;min-width:0;width:100%}
+.namefield input:focus{border-color:var(--accent)}
 @media (prefers-reduced-motion:reduce){.p-busy i{animation:none}.toast{transition:none}}
 </style>
 
@@ -238,7 +248,48 @@ function load() { try { var s = localStorage.getItem(KEY); return s ? JSON.parse
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 var S = load() || {};
 S.tx = S.tx || [];
-S.cfg = Object.assign({ currency: '₱', budget: 0, seen: false }, S.cfg || {});
+S.cfg = Object.assign({ currency: '₱', budget: 0, seen: false, name: 'Verdant', tagline: 'Spend calmly. Save steadily.', theme: 'evergreen' }, S.cfg || {});
+function appName() { return String(S.cfg.name || '').trim() || 'Verdant'; }
+function tagline() { return String(S.cfg.tagline == null ? '' : S.cfg.tagline).trim(); }
+function applyTitle() { try { document.title = appName(); } catch (e) {} }
+
+/* ---------- themes ---------- */
+function hexRgb(h) { var n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(','); }
+function mk(o) {
+  return { '--bg': o.bg, '--glow1': o.g1, '--glow2': o.g2, '--dock': 'rgba(' + hexRgb(o.bg) + ',.86)',
+    '--glass': 'rgba(' + o.tint + ',.07)', '--glass-hi': 'rgba(' + o.tint + ',.14)', '--line': 'rgba(' + o.tint + ',.15)',
+    '--fg': o.fg, '--muted': o.muted, '--accent': o.accent, '--accent-deep': o.deep, '--ink': o.ink, '--warn': o.warn, '--art-a': o.a, '--art-b': o.b };
+}
+var THEMES = {
+  evergreen: { name: 'Evergreen', v: mk({ bg: '#0b1612', g1: '#1d3a2b', g2: '#14301f', tint: '206,228,196', fg: '#e9f0e4', muted: '#93aa9a', accent: '#c4dca8', deep: '#86a66c', ink: '#10201a', warn: '#e8b97b', a: '#2f5a42', b: '#0f2419' }) },
+  moon: { name: 'Moon Light', v: mk({ bg: '#08171f', g1: '#134a63', g2: '#0d3547', tint: '180,215,235', fg: '#e8f2f7', muted: '#9ab5c3', accent: '#cfe6f2', deep: '#6fa8c4', ink: '#07212d', warn: '#f0c27b', a: '#2a6f8e', b: '#0a2330' }) },
+  sky: { name: 'Sky Blue', v: mk({ bg: '#0a1829', g1: '#1b4777', g2: '#143a63', tint: '170,205,240', fg: '#eaf3fb', muted: '#9bb2cb', accent: '#a9d2f5', deep: '#5b9bd5', ink: '#0a1f36', warn: '#f0c27b', a: '#3a77b3', b: '#0e2a4a' }) },
+  sun: { name: 'Setting Sun', v: mk({ bg: '#110f27', g1: '#382f74', g2: '#28235f', tint: '200,190,245', fg: '#efeaf8', muted: '#aaa3cb', accent: '#f2d9a1', deep: '#c9a45f', ink: '#1b1534', warn: '#ff9a8b', a: '#4b4290', b: '#17143a' }) },
+  afterglow: { name: 'Afterglow', v: mk({ bg: '#1b0f20', g1: '#572a63', g2: '#3a1f4d', tint: '245,190,225', fg: '#f8ecf4', muted: '#c3a3b9', accent: '#f3b6d9', deep: '#c97fb0', ink: '#2a1230', warn: '#ffc98a', a: '#8a4a8f', b: '#2a1535' }) },
+  twilight: { name: 'Twilight', v: mk({ bg: '#151220', g1: '#463b57', g2: '#30283e', tint: '225,205,235', fg: '#f1ebf0', muted: '#ada1b6', accent: '#f2b68c', deep: '#d98a5c', ink: '#2a1b16', warn: '#ff8585', a: '#5b4d6e', b: '#1d1728' }) }
+};
+var LOGOS = {
+  evergreen: ICONS.leaf,
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/><path d="M17 3.5v3M15.5 5h3"/>',
+  sky: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>',
+  sun: '<path d="M12 3v5M4.9 10.9l1.4 1.4M2 18h2M20 18h2M19.1 10.9l-1.4 1.4M22 22H2M16 18a4 4 0 0 0-8 0"/>',
+  afterglow: '<path d="M11 3l1.9 5.6 5.6 1.9-5.6 1.9L11 18l-1.9-5.6-5.6-1.9 5.6-1.9z"/><path d="M19 15v5M16.5 17.5h5"/>',
+  twilight: '<path d="M2.5 20L9 9l4.5 7 2-3 6 7z"/><circle cx="17.5" cy="5.5" r="1.8"/>'
+};
+function themeKey() { return THEMES[S.cfg.theme] ? S.cfg.theme : 'evergreen'; }
+function logo(cls) { return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + LOGOS[themeKey()] + '</svg>'; }
+function applyTheme() {
+  var k = themeKey(), v = THEMES[k].v;
+  try {
+    var st = document.documentElement.style;
+    Object.keys(v).forEach(function (p) { st.setProperty(p, v[p]); });
+    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', v['--bg']);
+    var mf = document.querySelector('link[rel="manifest"]'); if (mf) mf.setAttribute('href', k === 'evergreen' ? 'manifest.webmanifest' : 'manifest-' + k + '.webmanifest');
+    var icn = k === 'evergreen' ? 'icon-192.png' : 'icon-' + k + '.png';
+    ['icon', 'apple-touch-icon'].forEach(function (r) { var l = document.querySelector('link[rel="' + r + '"]'); if (l) l.setAttribute('href', icn); });
+  } catch (e) {}
+}
+
 S.lastSync = S.lastSync || 0;
 
 function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -272,21 +323,21 @@ function totals(m) {
 function iconFor(t) { return CAT_ICON[t.category] || (t.type === 'income' ? 'coin' : 'other'); }
 
 /* ---------- views ---------- */
-function leafArt() {
-  return '<svg viewBox="0 0 200 200"><defs><linearGradient id="lf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6f9a78"/><stop offset="1" stop-color="#1c3a2a"/></linearGradient></defs>' +
-    '<path d="M20 170C20 90 80 30 180 20C190 110 130 175 20 170Z" fill="url(#lf)"/><path d="M26 164C70 120 110 80 172 28" stroke="#c4dca8" stroke-opacity=".35" stroke-width="2" fill="none"/></svg>';
+function heroArt() {
+  return '<svg viewBox="-2 -2 28 28" style="fill:var(--accent);fill-opacity:.12;stroke:var(--accent);stroke-opacity:.7;stroke-width:.5;stroke-linecap:round;stroke-linejoin:round">' + LOGOS[themeKey()] + '</svg>';
 }
 function leafBg() {
-  return '<svg viewBox="0 0 400 700" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="lb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f5a42"/><stop offset="1" stop-color="#0f2419"/></linearGradient></defs>' +
+  return '<svg viewBox="0 0 400 700" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="lb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--art-a)"/><stop offset="1" style="stop-color:var(--art-b)"/></linearGradient></defs>' +
     '<path d="M-40 560C40 380 220 330 340 390C270 530 110 620 -40 560Z" fill="url(#lb)" opacity=".6"/>' +
     '<path d="M190 -30C330 40 430 210 405 350C270 320 175 170 190 -30Z" fill="url(#lb)" opacity=".55"/>' +
     '<path d="M-60 120C40 40 170 50 230 130C150 200 20 220 -60 120Z" fill="url(#lb)" opacity=".35"/>' +
-    '<path d="M-30 545C110 450 240 415 330 395M200 -10C260 120 330 250 400 340" stroke="#8fb39a" stroke-opacity=".22" stroke-width="2" fill="none"/></svg>';
+    '<path d="M-30 545C110 450 240 415 330 395M200 -10C260 120 330 250 400 340" style="stroke:var(--accent)" stroke-opacity=".2" stroke-width="2" fill="none"/></svg>';
 }
 function splash() {
   return '<section class="splash"><div class="leaves" aria-hidden="true">' + leafBg() + '</div>' +
-    '<div class="splashcard glass">' + ic('leaf', 'logo') + '<h1>Verdant</h1><p class="tagline">Spend calmly. Save steadily.</p>' +
+    '<div class="splashcard glass">' + logo('logo') + '<h1>' + esc(appName()) + '</h1>' + (tagline() ? '<p class="tagline">' + esc(tagline()) + '</p>' : '') +
     '<p class="lines">Track every expense.<br>Plan the month.<br>Keep what is left.</p>' +
+    '<label class="namefield"><span>Name your tracker</span><input id="appname" maxlength="24" placeholder="Verdant" autocomplete="off" value="' + esc(S.cfg.name) + '"></label>' +
     '<button class="btn" data-act="start"><span>Get Started</span>' + ic('arrow') + '</button>' +
     '<p class="fine">' + 'Works offline. Your data stays on this phone.' + '</p></div></section>';
 }
@@ -315,8 +366,8 @@ function home() {
   var over = b > 0 && t.exp > b;
   var pct = b > 0 ? Math.min(100, Math.round(t.exp / b * 100)) : 0;
   var list = sortTx(applyChip(inMonth(ui.month))).slice(0, 5);
-  var h = '<header class="top"><div class="brand">' + ic('leaf') + 'Verdant</div></header>' + monthNav();
-  h += '<section class="hero glass"><div class="heroart" aria-hidden="true">' + leafArt() + '</div>' +
+  var h = '<header class="top"><div class="brand">' + logo() + esc(appName()) + '</div></header>' + monthNav();
+  h += '<section class="hero glass"><div class="heroart" aria-hidden="true">' + heroArt() + '</div>' +
     '<p class="eyebrow">' + (b > 0 ? 'Left of budget' : 'Net this month') + '</p><p class="big' + (over ? ' over' : '') + '">' + fmt(left) + '</p>';
   if (b > 0) h += '<div class="bar' + (over ? ' over' : '') + '" role="img" aria-label="' + pct + ' percent of budget spent"><i style="width:' + pct + '%"></i></div><p class="sub">' + fmt(t.exp) + ' spent of ' + fmt(b) + '</p>';
   else h += '<p class="sub">Income ' + fmt(t.inc) + ' · Spent ' + fmt(t.exp) + '</p>';
@@ -366,6 +417,12 @@ function summary() {
 function settings() {
   var hasSamples = S.tx.some(function (t) { return t.sample; });
   var h = '<header class="top"><h1>Settings</h1></header>';
+  h += '<section class="card glass"><h2>Your tracker</h2><label class="field"><span>Name</span><input id="nm" maxlength="24" placeholder="Verdant" autocomplete="off" value="' + esc(S.cfg.name) + '"></label>' +
+    '<label class="field"><span>Tagline</span><input id="tg" maxlength="40" placeholder="Optional" autocomplete="off" value="' + esc(S.cfg.tagline) + '"></label><p>The name appears on the welcome screen and at the top of Home.</p></section>';
+  h += '<section class="card glass"><h2>Theme</h2><div class="themes" role="group" aria-label="Theme">' + Object.keys(THEMES).map(function (k) {
+    var v = THEMES[k].v;
+    return '<button class="themeopt" data-act="theme" data-v="' + k + '" aria-pressed="' + (themeKey() === k) + '"><span class="sw" style="background:linear-gradient(150deg,' + v['--glow1'] + ',' + v['--bg'] + ');color:' + v['--accent'] + '"><svg class="i" viewBox="0 0 24 24" aria-hidden="true">' + LOGOS[k] + '</svg></span><span>' + THEMES[k].name + '</span></button>';
+  }).join('') + '</div><p>Each theme comes with its own logo.</p></section>';
   h += '<section class="card glass"><h2>Preferences</h2><label class="field"><span>Currency</span><select id="cur">' + CURRENCIES.map(function (c) {
     return '<option value="' + c[0] + '"' + (S.cfg.currency === c[0] ? ' selected' : '') + '>' + c[1] + '</option>';
   }).join('') + '</select></label><label class="field"><span>Monthly budget</span><input id="bud" inputmode="decimal" placeholder="0.00" value="' + (S.cfg.budget ? esc(S.cfg.budget) : '') + '"></label></section>';
@@ -466,11 +523,11 @@ function exportData() {
   var entries = live().filter(function (t) { return !t.sample; }).map(function (t) {
     return { id: t.id, date: t.date, type: t.type, category: t.category, amount: t.amount, note: t.note };
   });
-  var data = JSON.stringify({ app: 'verdant', version: 1, exported: new Date().toISOString(), currency: S.cfg.currency, budget: S.cfg.budget, entries: entries }, null, 2);
+  var data = JSON.stringify({ app: 'verdant', version: 1, exported: new Date().toISOString(), currency: S.cfg.currency, budget: S.cfg.budget, name: appName(), tagline: tagline(), theme: themeKey(), entries: entries }, null, 2);
   try {
     var url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
     var a = document.createElement('a');
-    a.href = url; a.download = 'verdant-backup-' + ymd(new Date()) + '.json';
+    a.href = url; a.download = (appName().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'budget') + '-backup-' + ymd(new Date()) + '.json';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
     toast(entries.length ? 'Backup saved to your downloads' : 'Backup saved (no entries yet)');
@@ -492,8 +549,11 @@ function importData(file) {
       });
       if (d.currency && CURRENCIES.some(function (c) { return c[0] === d.currency; })) S.cfg.currency = d.currency;
       if (+d.budget > 0 && !S.cfg.budget) S.cfg.budget = +d.budget;
+      if (S.cfg.name === 'Verdant' && d.name) S.cfg.name = String(d.name).slice(0, 24);
+      if (themeKey() === 'evergreen' && THEMES[d.theme]) S.cfg.theme = d.theme;
+      applyTheme(); applyTitle();
       save(); render(); toast(added + (added === 1 ? ' entry imported' : ' entries imported'));
-    } catch (err) { toast('That file is not a Verdant backup'); }
+    } catch (err) { toast('That file is not a backup file'); }
   };
   r.readAsText(file);
 }
@@ -502,7 +562,7 @@ document.addEventListener('click', function (e) {
   var el = e.target.closest ? e.target.closest('[data-act]') : null;
   if (!el) return;
   var a = el.getAttribute('data-act'), v = el.getAttribute('data-v'), id = el.getAttribute('data-id');
-  if (a === 'start') { S.cfg.seen = true; save(); render(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (x) {} }
+  if (a === 'start') { var an = document.getElementById('appname'); if (an) S.cfg.name = String(an.value).trim() || 'Verdant'; S.cfg.seen = true; applyTitle(); save(); render(); try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (x) {} }
   else if (a === 'go') go(v);
   else if (a === 'month') { ui.month = shiftMonth(ui.month, +el.getAttribute('data-d')); render(); }
   else if (a === 'chip') { ui.chip = v; render(); }
@@ -515,6 +575,7 @@ document.addEventListener('click', function (e) {
   else if (a === 'dcat') { readDraft(); ui.draft.category = v; render(); }
   else if (a === 'save') saveDraft();
   else if (a === 'del') delDraft();
+  else if (a === 'theme') { S.cfg.theme = v; save(); applyTheme(); render(); toast(THEMES[themeKey()].name + ' theme'); }
   else if (a === 'export') exportData();
   else if (a === 'sample') addSamples();
   else if (a === 'rmsample') { S.tx = S.tx.filter(function (t) { return !t.sample; }); save(); render(); toast('Sample entries removed'); }
@@ -526,15 +587,21 @@ document.addEventListener('click', function (e) {
 document.addEventListener('input', function (e) {
   var id = e.target.id;
   if (id === 'q') { ui.q = e.target.value; var l = document.getElementById('list'); if (l) l.innerHTML = activityList(); }
+  else if (id === 'appname') { S.cfg.name = e.target.value; var h1 = document.querySelector('.splashcard h1'); if (h1) h1.textContent = appName(); }
   else if (id === 'amt' && ui.draft) { ui.draft.amount = e.target.value; var er = document.getElementById('err'); if (er) er.textContent = ''; }
   else if (id === 'date' && ui.draft) ui.draft.date = e.target.value;
   else if (id === 'note' && ui.draft) ui.draft.note = e.target.value;
 });
 document.addEventListener('change', function (e) {
   if (e.target.id === 'imp') { if (e.target.files && e.target.files[0]) importData(e.target.files[0]); e.target.value = ''; }
+  else if (e.target.id === 'appname') { S.cfg.name = String(e.target.value).trim() || 'Verdant'; save(); applyTitle(); }
+  else if (e.target.id === 'nm') { S.cfg.name = String(e.target.value).trim() || 'Verdant'; save(); applyTitle(); render(); toast('Name updated'); }
+  else if (e.target.id === 'tg') { S.cfg.tagline = String(e.target.value).trim(); save(); render(); toast('Tagline updated'); }
   else if (e.target.id === 'cur') { S.cfg.currency = e.target.value; save(); render(); }
   else if (e.target.id === 'bud') { var b = parseFloat(String(e.target.value).replace(/,/g, '')); S.cfg.budget = b > 0 ? b : 0; save(); render(); }
 });
+applyTitle();
+applyTheme();
 render();
 })();
 </script>

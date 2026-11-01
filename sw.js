@@ -1,6 +1,6 @@
 // Verdant service worker: caches the app so it opens with no signal.
-// When you change the app, change CACHE (for example to 'verdant-v2') so phones pick up the new version.
-var CACHE = 'verdant-v1';
+// When you change the app, change CACHE (for example to 'verdant-v4') so phones pick up the new version.
+var CACHE = 'verdant-v3';
 var ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function (e) {

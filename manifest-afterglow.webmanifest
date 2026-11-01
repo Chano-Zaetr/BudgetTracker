@@ -1,0 +1,19 @@
+{
+  "name": "Budget Tracker",
+  "short_name": "Budget",
+  "description": "A calm, offline budget tracker. Your data stays on your phone.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1b0f20",
+  "theme_color": "#1b0f20",
+  "icons": [
+    {
+      "src": "icon-afterglow.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
